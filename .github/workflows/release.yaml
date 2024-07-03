@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions: read-all
+
+jobs:
+  release:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+      - name: Checkout Helm charts repo
+        uses: actions/checkout@v4
+        with:
+          repository: blackbird-cloud/helm-charts
+          path: helm-charts
+          token: ${{ secrets.CHARTS_GITHUB_TOKEN }}
+      - name: Extract tag name
+        id: extract_tag_name
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      - name: Release Helm chart
+        run: |
+          mkdir tmp && cd tmp
+          helm package -u ../REPO_NAME
+          helm repo index --merge ../helm-charts/index.yaml --url https://blackbird-cloud.github.io/helm-charts .
+          mv * ../helm-charts
+          cd ../helm-charts
+          git config user.name blackbird-cloud
+          git config user.email info+github@blackbird.cloud
+          git add .
+          git commit -m "Add Blackbird Cloud REPO_NAME chart package ${{steps.extract_tag_name.outputs.tag}}"
+          git push

@@ -1,0 +1,13 @@
+{{- if .Values.argoapplication.create -}}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ include "application-bootstrap.fullname" . }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "application-bootstrap.labels" . | nindent 4 }}
+{{- with .Values.argoapplication.spec }}
+spec:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end }}
