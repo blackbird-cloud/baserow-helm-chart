@@ -1,37 +1,6 @@
-# Blackbird Cloud Helm Template
+# Blackbird Cloud Baserow Helm Chart
 
 [![blackbird-logo](https://raw.githubusercontent.com/blackbird-cloud/terraform-module-template/main/.config/logo_simple.png)](https://www.blackbird.cloud)
-
-A handy helm template for making more helm template
-
-## Terraform Example
-```hcl
-module "my-application-bootstrap" {
-  source  = "blackbird-cloud/deployment/helm"
-  version = ">= 1.1.2"
-
-  name        = "my-application"
-  description = "my-application"
-  namespace   = "xxxxxx"
-
-  cleanup_on_fail = true
-  force_update    = true
-  wait            = true
-  wait_for_jobs   = true
-
-  values = [
-    yamlencode({
-      namespace: {
-        name: "my-application"
-      },
-      role: {
-        create: true
-      }
-    })
-  ]
-}
-```
-
 
 ## About
 

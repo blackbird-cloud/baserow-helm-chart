@@ -1,0 +1,80 @@
+# Deployment
+image:
+  repository: baserow/baserow
+  tag: 1.25.2
+  pullPolicy: IfNotPresent
+
+workingDir: /baserow-saas
+
+args: []
+
+imagePullSecrets: []
+
+podAnnotations: {}
+
+securityContext: {}
+
+containerSecurityContext: {}
+
+replicaCount: 1
+
+revisionHistoryLimit: 10
+
+resources: {}
+
+readinessProbe: {}
+
+livenessProbe: {}
+
+priorityClassName: ""
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+extraEnv: []
+
+envFrom: []
+
+serviceAccount:
+  create: false
+  name: ""
+  annotations: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+service:
+  create: true
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+pdb:
+  create: false
+  minAvailable: 50%
+
+mountConfiguration:
+  backend: true
+  frontend: false
+
+# Settings from top chart values.yaml
+global:
+  baserow:
+    asgi:
+      image:
+        repository:
+    namespace: baserow
+    imagePullSecrets: []
+    podAnnotations: {}
+    serviceAccount:
+      shared: true
+      create: true
+      annotations: {}
+    backendSecret: backend-secret

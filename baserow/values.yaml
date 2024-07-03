@@ -1,0 +1,270 @@
+global:
+  baserow:
+    imageRegistry: baserow
+    image:
+      tag: 1.25.2
+    imagePullSecrets: []
+    serviceAccount:
+      shared: true
+      create: true
+      name: baserow
+      annotations: {}
+    backendConfigMap: backend-config
+    backendSecret: backend-secret
+    frontendConfigMap: frontend-config
+    envFrom: []
+    domain: cluster.local
+
+generateJwtSecret: true
+
+migration:
+  enabled: true
+  image:
+    repository: backend
+  priorityClassName: ""
+  nodeSelector: {}
+  tolerations: []
+  affinity: []
+  extraEnv: []
+  envFrom: []
+  volumes: []
+  volumeMounts: []
+
+baserow-backend-asgi:
+  image:
+    repository: backend
+  args:
+    - "gunicorn"
+  livenessProbe:
+    exec:
+      command:
+        - /bin/bash
+        - -c
+        - /baserow/backend/docker/docker-entrypoint.sh backend-healthcheck
+    failureThreshold: 3
+    initialDelaySeconds: 120
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 5
+
+  readinessProbe:
+    exec:
+      command:
+        - /bin/bash
+        - -c
+        - /baserow/backend/docker/docker-entrypoint.sh backend-healthcheck
+    failureThreshold: 3
+    initialDelaySeconds: 120
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 5
+
+baserow-backend-wsgi:
+  image:
+    repository: backend
+  args:
+    - gunicorn-wsgi
+    - "--timeout"
+    - "120"
+  livenessProbe:
+    exec:
+      command:
+        - /bin/bash
+        - -c
+        - /baserow/backend/docker/docker-entrypoint.sh backend-healthcheck
+    failureThreshold: 3
+    initialDelaySeconds: 120
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 5
+
+  readinessProbe:
+    exec:
+      command:
+        - /bin/bash
+        - -c
+        - /baserow/backend/docker/docker-entrypoint.sh backend-healthcheck
+    failureThreshold: 3
+    initialDelaySeconds: 120
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 5
+
+baserow-frontend:
+  image:
+    repository: web-frontend
+  workingDir: ""
+  args:
+    - nuxt
+  mountConfiguration:
+    backend: false
+    frontend: true
+  service:
+    port: 3000
+    targetPort: 3000
+
+  readinessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /_health
+      port: 3000
+      scheme: HTTP
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 5
+  livenessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /_health
+      port: 3000
+      scheme: HTTP
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 5
+
+baserow-celery-beat-worker:
+  image:
+    repository: backend
+  args:
+    - celery-beat
+  service:
+    create: false
+
+baserow-celery-export-worker:
+  image:
+    repository: backend
+  args:
+    - celery-exportworker
+  service:
+    create: false
+
+baserow-celery-worker:
+  image:
+    repository: backend
+  args:
+    - celery-worker
+  service:
+    create: false
+  livenessProbe:
+    exec:
+      command:
+        - /bin/bash
+        - -c
+        - /baserow/backend/docker/docker-entrypoint.sh celery-worker-healthcheck
+    failureThreshold: 3
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 10
+
+  readinessProbe:
+    exec:
+      command:
+        - /bin/bash
+        - -c
+        - /baserow/backend/docker/docker-entrypoint.sh celery-worker-healthcheck
+    failureThreshold: 3
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 10
+
+baserow-celery-flower:
+  image:
+    repository: backend
+  enabled: false
+  args:
+    - celery-flower
+
+ingress:
+  enabled: true
+  className: caddy
+  annotations:
+    kubernetes.io/ingress.class: caddy
+  tls: []
+
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: true
+    password: baserow
+
+postgresql:
+  enabled: true
+  auth:
+    database: baserow
+    existingSecret: ""
+    password: baserow
+    username: baserow
+
+minio:
+  enabled: true
+  defaultBuckets: "baserow"
+
+caddy:
+  enabled: true
+
+frontendConfigMap:
+  ADDITIONAL_MODULES: ""
+  BASEROW_DISABLE_PUBLIC_URL_CHECK: "yes"
+  BASEROW_DISABLE_GOOGLE_DOCS_FILE_PREVIEW: ""
+  DOWNLOAD_FILE_VIA_XHR: "1"
+  BASEROW_MAX_IMPORT_FILE_SIZE_MB: "512"
+  BASEROW_MAX_SNAPSHOTS_PER_GROUP: "-1"
+  PRIVATE_BACKEND_URL: http://backend-wsgi
+  PUBLIC_BACKEND_URL: https://api.mydomain.com
+  PUBLIC_WEB_FRONTEND_URL: https://mydomain.com
+
+# backendSecrets: {}
+
+backendConfigMap:
+  # AWS_S3_CUSTOM_DOMAIN: ""
+  # AWS_S3_REGION_NAME: eu-central-1
+  BASEROW_AMOUNT_OF_GUNICORN_WORKERS: "5"
+  BASEROW_BACKEND_LOG_LEVEL: DEBUG
+  BASEROW_BUILDER_DOMAINS: builder.mydomain.com
+  BASEROW_COUNT_ROWS_ENABLED: "true"
+  BASEROW_DEFAULT_SEARCH_MODE: full-text-with-count
+  BASEROW_ENABLE_OTEL: "true"
+  BASEROW_EXTRA_ALLOWED_HOSTS: backend-wsgi.baserow.svc.cluster.local
+  BASEROW_FILE_UPLOAD_SIZE_LIMIT_MB: "20"
+  BASEROW_FREE_TIER_QUOTA_ROWS: "3000"
+  BASEROW_FREE_TIER_QUOTA_STORAGE: "2"
+  BASEROW_FRONTEND_BASICAUTH_PASSWORD: baserow
+  BASEROW_GROUP_STORAGE_USAGE_ENABLED: "true"
+  BASEROW_MAX_CONCURRENT_USER_REQUESTS: "5"
+  BASEROW_ROW_COUNT_JOB_CRONTAB: 0 11 * * *
+  # BASEROW_SAAS_OPEN_AI_ORGANIZATION: ""
+  # BASEROW_SAAS_OPENAI_MODELS: ""
+  BASEROW_SEAT_USAGE_JOB_CRONTAB: 0 10 * * *
+  BASEROW_STORAGE_USAGE_JOB_CRONTAB: 0 9 * * *
+  BASEROW_SUBSCRIPTION_PLAN_SAAS_ADVANCED_MONTHLY_ID: ""
+  BASEROW_SUBSCRIPTION_PLAN_SAAS_ADVANCED_YEARLY_ID: ""
+  BASEROW_SUBSCRIPTION_PLAN_SAAS_PREMIUM_MONTHLY_ID: ""
+  BASEROW_SUBSCRIPTION_PLAN_SAAS_PREMIUM_YEARLY_ID: ""
+  BASEROW_SUBSCRIPTION_PLAN_SELF_HOSTED_MONTHLY_ID: ""
+  BASEROW_SUBSCRIPTION_PLAN_SELF_HOSTED_YEARLY_ID: ""
+  DONT_UPDATE_FORMULAS_AFTER_MIGRATION: "yes"
+  ENABLE_SECURE_PROXY_SSL_HEADER: "yes"
+  FEATURE_FLAGS: "*"
+  INITIAL_TABLE_DATA_LIMIT: "100000"
+  MAILGUN_SENDER_DOMAIN: mail.mydomain.com
+  MIGRATE_ON_STARTUP: "false"
+  # OTEL_METRIC_EXPORT_INTERVAL: "7200000"
+  # OTEL_PER_MODULE_SAMPLER_OVERRIDES: opentelemetry.instrumentation.celery=always_on,opentelemetry.instrumentation.django=always_on
+  # OTEL_TRACES_SAMPLER: traceidratio
+  # OTEL_TRACES_SAMPLER_ARG: "0.05"
+  PADDLE_SANDBOX: "True"
+  PADDLE_VENDOR_ID: "7026"
+  # POSTHOG_HOST: https://eu.posthog.com
+  # POSTHOG_PROJECT_API_KEY: my-api-key
+  PRIVATE_BACKEND_URL: http://backend-wsgi
+  PUBLIC_BACKEND_URL: https://api.mydomain.com
+  PUBLIC_WEB_FRONTEND_URL: https://mydomain.com
+  # SENTRY_BACKEND_DSN: ""
+  # SENTRY_DSN: ""
+  # SENTRY_ENVIRONMENT: ""
+  SYNC_TEMPLATES_ON_STARTUP: "false"

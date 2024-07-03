@@ -27,12 +27,12 @@ jobs:
       - name: Release Helm chart
         run: |
           mkdir tmp && cd tmp
-          helm package -u ../REPO_NAME
+          helm package -u ../baserow
           helm repo index --merge ../helm-charts/index.yaml --url https://blackbird-cloud.github.io/helm-charts .
           mv * ../helm-charts
           cd ../helm-charts
           git config user.name blackbird-cloud
           git config user.email info+github@blackbird.cloud
           git add .
-          git commit -m "Add Blackbird Cloud REPO_NAME chart package ${{steps.extract_tag_name.outputs.tag}}"
+          git commit -m "Add Blackbird Cloud baserow chart package ${{steps.extract_tag_name.outputs.tag}}"
           git push
