@@ -1,0 +1,54 @@
+{{ if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "baserow.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ .Values.global.baserow.backendDomain | default (printf "api.%s" .Values.global.baserow.domain) }}
+      http:
+        paths:
+          - path: /ws/
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "baserow.fullname" . }}-baserow-backend-asgi
+                port:
+                  number: 80
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "baserow.fullname" . }}-baserow-backend-wsgi
+                port:
+                  number: 80
+    - host: {{ .Values.global.baserow.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "baserow.fullname" . }}-baserow-frontend
+                port:
+                  number: 80
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "baserow.fullname" . }}-baserow-frontend
+                port:
+                  number: 80
+  {{- if .Values.ingress.tls }}
+  tls:
+    {{ tpl (toYaml .Values.ingress.tls | indent 4) . }}
+  {{- end -}}
+{{ end }}
